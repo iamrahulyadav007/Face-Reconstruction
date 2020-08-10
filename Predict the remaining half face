@@ -1,0 +1,153 @@
+
+
+#Importing the libraries
+
+In [1]:
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.datasets import fetch_olivetti_faces
+from sklearn.utils.validation import check_random_state
+
+# from sklearn.ensemble import RandomForestRegressor 
+from sklearn.ensemble import ExtraTreesRegressor 
+from sklearn.neighbors import KNeighborsRegressor 
+from sklearn.linear_model import  LinearRegression 
+from sklearn.linear_model import RidgeCV
+
+#Load the faces datasets
+
+In [2]:
+
+data = fetch_olivetti_faces() 
+targets = data.target
+
+In [3]:# Components of the data
+
+print(type(data))
+print(data.keys())
+
+#Diving into the images
+
+In [4]:
+all_images = data.images 
+print(len(all_images))
+
+In [5]:
+plt.imshow(all_images[31],  cmap=plt.cm.gray)
+
+In [6]:
+all_images.shape
+
+In [7]:
+face1  =  all_images[0] face1.shape
+
+#Lets print a few of the faces
+In [8]:
+count = 0
+fig,  axes  =  plt.subplots(10,10,  sharex=True,  sharey=True,  figsize=(12,12))
+for face in range(10):
+    for sub_face in range(10):
+        axes[face,  sub_face].imshow(all_images[count],  cmap=plt.cm.gray,  interpolation='nearest') 
+        count += 1
+
+
+In [9]:
+data = data.images.reshape((len(data.images), -1)) 
+train  =  data[targets  <  30]
+test  =  data[targets  >=  30]    
+#  Test  on  independent  people
+
+print("Data Shape: {}".format(data.shape)) 
+print("training data shape: {}".format(train.shape)) 
+print("testing data shape: {}".format(test.shape))
+
+#Test on a subset of people
+In [10]:
+n_faces = 5
+rng = check_random_state(4)
+face_ids  =  rng.randint(test.shape[0],  size=(n_faces,  )) 
+test = test[face_ids, :]
+
+n_pixels  =  data.shape[1]
+# Upper half of the faces
+X_train  =  train[:,  :(n_pixels  +  1)  //  2]
+# Lower half of the faces
+y_train  =  train[:,  n_pixels  //  2:] 
+X_test  =  test[:,  :(n_pixels  +  1)  //  2] 
+y_test  =  test[:,  n_pixels  //  2:]
+
+#Lets see one of the training images
+
+In [11]:
+plt.imshow(X_train[0].reshape(32,64),  cmap=plt.cm.gray)
+
+#Fit Estimators/ Models
+
+In [12]:
+ESTIMATORS = {
+    "Extra  trees":  ExtraTreesRegressor(n_estimators=10,  max_features=32,
+                    random_state=0),
+    "K-nn": KNeighborsRegressor(),
+    "Linear regression": LinearRegression(), 
+    "Ridge": RidgeCV(),
+}
+
+#Making face predictions
+In [13]:
+y_test_predict = dict()
+for  name,  estimator  in  ESTIMATORS.items(): 
+    estimator.fit(X_train, y_train) 
+    y_test_predict[name]  =  estimator.predict(X_test)
+    
+
+
+
+#Plot the completed faces
+ 
+ 
+ 
+ In [14]:
+ 
+ image_shape  =  (64,  64)
+
+n_cols = 1 + len(ESTIMATORS) 
+plt.figure(figsize=(2.  *  n_cols,  2.26  *  n_faces))
+plt.suptitle("Face completion with multi-output estimators", size=16)
+
+for i in range(n_faces):
+    true_face  =  np.hstack((X_test[i],  y_test[i]))
+
+    if i:
+        sub = plt.subplot(n_faces, n_cols, i * n_cols + 1)
+    else:
+        sub  =  plt.subplot(n_faces,  n_cols,  i  *  n_cols  +  1,
+                            title="true faces")
+
+    sub.axis("off") 
+    sub.imshow(true_face.reshape(image_shape),
+               cmap=plt.cm.gray, 
+               interpolation="nearest")
+
+    for  j,  est  in  enumerate(sorted(ESTIMATORS)):
+        completed_face  =  np.hstack((X_test[i],  y_test_predict[est][i]))
+
+        if i:
+            sub = plt.subplot(n_faces, n_cols, i * n_cols + 2 + j)
+
+        else:
+            sub = plt.subplot(n_faces, n_cols, i * n_cols + 2 + j,
+                               title=est)
+
+        sub.axis("off") 
+        sub.imshow(completed_face.reshape(image_shape),
+                   cmap=plt.cm.gray, 
+                   interpolation="nearest")
+
+plt.show()
+
+
+    
+
+
